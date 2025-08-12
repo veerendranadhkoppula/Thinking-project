@@ -40,7 +40,7 @@ export default function SignupPage() {
   return (
     <div className={styles.container}>
       <form onSubmit={handleSignup} className={styles.form}>
-        <h2 className={styles.title}>Create an Account 🚀</h2>
+        <h2 className={styles.title}>Create an Account </h2>
         <p className={styles.subtitle}>Join us by entering your details</p>
 
         {errorMessage && <p className={styles.error}>{errorMessage}</p>}

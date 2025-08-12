@@ -41,7 +41,7 @@ export default function LoginPage() {
   return (
     <div className={styles.container}>
       <form onSubmit={handleLogin} className={styles.form}>
-        <h2 className={styles.title}>Welcome Back 👋</h2>
+        <h2 className={styles.title}>Welcome Back</h2>
         <p className={styles.subtitle}>Login with username or email</p>
 
         <input
