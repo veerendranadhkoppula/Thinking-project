@@ -15,10 +15,10 @@ const dirname = path.dirname(filename)
 
 export default buildConfig({
   admin: {
-    user: Users.slug,
-    importMap: {
-      baseDir: path.resolve(dirname),
-    },
+  user: Users.slug,
+  importMap: {
+    baseDir: path.resolve(dirname),
+  },
   },
   collections: [Users, Media],
   editor: lexicalEditor(),
