@@ -26,6 +26,7 @@
     "cross-env": "^7.0.3",
     "dotenv": "16.4.7",
     "graphql": "^16.8.1",
+    "jose": "^6.0.12",
     "lucide-react": "^0.539.0",
     "next": "15.4.4",
     "nodemailer": "^7.0.5",
