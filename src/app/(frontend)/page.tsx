@@ -1,5 +1,6 @@
 // app/(frontend)/page.tsx
 import Navbar from './Home/Navbar/Navbar';
+import DashBoard from './Home/DashBoard/DashBoard';
 import { cookies } from 'next/headers';
 import db from './lib/db';
 
@@ -22,11 +23,18 @@ export default async function HomePage() {
     );
     user = result.rows[0] || null;
   }
+  const dummyData = [
+  { id: 1, title: "Project Dashboard", category: "work" },
+  { id: 2, title: "Shopping List", category: "personal" },
+  { id: 3, title: "Meeting Notes", category: "work" },
+  { id: 4, title: "Travel Plans", category: "personal" },
+  { id: 5, title: "Ideas", category: "other" },
+];
 
   return (
     <>
       <Navbar user={user} />
-      {/* rest of your homepage */}
+      <DashBoard data={dummyData}/>
     </>
   );
 }
