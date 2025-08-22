@@ -2,15 +2,12 @@ import type { CollectionConfig } from 'payload'
 
 export const Media: CollectionConfig = {
   slug: 'media',
-  access: {
-    read: () => true,
+  upload: {
+    staticDir: 'public/media',
   },
+  access: { read: () => true },
   fields: [
-    {
-      name: 'alt',
-      type: 'text',
-      required: true,
-    },
+    // ✅ not required so uploads from FormData without alt succeed
+    { name: 'alt', type: 'text' },
   ],
-  upload: true,
 }

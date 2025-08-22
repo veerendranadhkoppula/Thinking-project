@@ -12,12 +12,7 @@ export const Teams: CollectionConfig = {
   fields: [
     { name: 'name', type: 'text', required: true },
     { name: 'slug', type: 'text', required: true, unique: true },
-    {
-      name: 'owner',
-      type: 'relationship',
-      relationTo: 'users',
-      required: true,
-    },
+    { name: 'owner', type: 'relationship', relationTo: 'users', required: true },
     {
       name: 'members',
       type: 'array',

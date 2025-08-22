@@ -70,6 +70,8 @@ export interface Config {
     users: User;
     media: Media;
     teams: Team;
+    tickets: Ticket;
+    comments: Comment;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -79,6 +81,8 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     teams: TeamsSelect<false> | TeamsSelect<true>;
+    tickets: TicketsSelect<false> | TicketsSelect<true>;
+    comments: CommentsSelect<false> | CommentsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -147,7 +151,7 @@ export interface User {
  */
 export interface Media {
   id: number;
-  alt: string;
+  alt?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -182,6 +186,45 @@ export interface Team {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tickets".
+ */
+export interface Ticket {
+  id: number;
+  title: string;
+  description: string;
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  reporter: number | User;
+  assignee?: (number | null) | User;
+  attachments?: (number | Media)[] | null;
+  labels?:
+    | {
+        value?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Page URL where the issue occurred
+   */
+  url?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "comments".
+ */
+export interface Comment {
+  id: number;
+  ticket: number | Ticket;
+  author: number | User;
+  body: string;
+  attachments?: (number | Media)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
@@ -198,6 +241,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'teams';
         value: number | Team;
+      } | null)
+    | ({
+        relationTo: 'tickets';
+        value: number | Ticket;
+      } | null)
+    | ({
+        relationTo: 'comments';
+        value: number | Comment;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -299,6 +350,40 @@ export interface TeamsSelect<T extends boolean = true> {
         invitedBy?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tickets_select".
+ */
+export interface TicketsSelect<T extends boolean = true> {
+  title?: T;
+  description?: T;
+  status?: T;
+  priority?: T;
+  reporter?: T;
+  assignee?: T;
+  attachments?: T;
+  labels?:
+    | T
+    | {
+        value?: T;
+        id?: T;
+      };
+  url?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "comments_select".
+ */
+export interface CommentsSelect<T extends boolean = true> {
+  ticket?: T;
+  author?: T;
+  body?: T;
+  attachments?: T;
   updatedAt?: T;
   createdAt?: T;
 }

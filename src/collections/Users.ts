@@ -2,17 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 export const Users: CollectionConfig = {
   slug: 'users',
-  admin: {
-    useAsTitle: 'username',
+  admin: { useAsTitle: 'username' },
+  auth: true, 
+  access: {
+    read: ({ req }) => !!req.user, 
   },
-  auth: true,
   fields: [
-    {
-      name: 'username',
-      type: 'text',
-      required: true,
-      unique: true,
-    },
+    { name: 'username', type: 'text', required: true, unique: true },
     {
       name: 'role',
       type: 'select',
@@ -20,6 +16,5 @@ export const Users: CollectionConfig = {
       defaultValue: 'user',
       required: true,
     },
-    // Email & password are automatically handled by Payload
   ],
 }

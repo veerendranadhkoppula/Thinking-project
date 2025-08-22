@@ -1,0 +1,158 @@
+.container {
+  display: flex;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 1100px;
+  margin: 40px auto;
+  font-family: "Inter", Arial, sans-serif;
+  min-height: 600px;
+  color: #222; 
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 16px;
+  min-width: 220px;
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.tabButton {
+  background: rgba(255, 255, 255, 0.3);
+  border: none;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 600;
+  color: #222;
+  transition: all 0.2s ease;
+}
+
+.tabButton:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.active {
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+}
+
+
+.content {
+  flex: 1;
+  padding: 28px;
+}
+
+.section {
+  background: rgba(255, 255, 255, 0.3);
+  padding: 24px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.section h2 {
+  margin-bottom: 18px;
+  font-size: 20px;
+  color: #111;
+}
+
+.section h3 {
+  margin-top: 20px;
+  margin-bottom: 8px;
+  font-size: 16px;
+  color: #333;
+}
+
+
+.section input[type="text"],
+.section input[type="file"],
+.section select {
+  display: block;
+  margin: 10px 0 18px;
+  padding: 10px;
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid rgba(0,0,0,0.2);
+  border-radius: 8px;
+  font-size: 14px;
+  background: rgba(255,255,255,0.6);
+  color: #111;
+}
+
+.section input::placeholder {
+  color: #666;
+}
+
+
+.section button {
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.section button:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.section table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.section table th,
+.section table td {
+  border: 1px solid rgba(0,0,0,0.1);
+  padding: 10px;
+  text-align: left;
+  font-size: 14px;
+  color: #222;
+  background: rgba(255,255,255,0.3);
+}
+
+.section table th {
+  font-weight: bold;
+}
+
+.section table td button {
+  background: rgba(200, 50, 50, 0.8);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: #fff;
+}
+
+.section table td button:hover {
+  background: rgba(220, 20, 20, 1);
+}
+
+.section ul {
+  margin-top: 10px;
+  padding-left: 20px;
+}
+
+.section ul li {
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #222;
+}

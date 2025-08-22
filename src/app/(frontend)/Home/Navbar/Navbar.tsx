@@ -28,7 +28,6 @@ export default function Navbar({ user }: NavbarProps) {
     file: null as File | File[] | null,
   });
 
-
   useEffect(() => {
     setFormData((prev) => ({ ...prev, email: user?.email || "" }));
   }, [user?.email]);
@@ -57,12 +56,11 @@ export default function Navbar({ user }: NavbarProps) {
     await fetch("/api/auth/logout", { method: "POST" });
     setIsDropdownOpen(false);
     setIsModalOpen(false);
-    router.refresh(); 
+    router.refresh();
   };
 
   const initials =
     user?.username?.trim()?.charAt(0)?.toUpperCase() || "👤";
-
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -123,6 +121,9 @@ export default function Navbar({ user }: NavbarProps) {
                     </Link>
                     <Link href="/billing" className={styles.dropdownItem}>
                       Billing
+                    </Link>
+                    <Link href="/tickets" className={styles.dropdownItem}>
+                      Open Tickets
                     </Link>
                     <hr className={styles.dropdownDivider} />
                     <button
