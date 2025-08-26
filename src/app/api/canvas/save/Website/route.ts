@@ -36,7 +36,8 @@ export async function POST(req: Request) {
     // If found → update existing Website
     const updated = await payload.update({
       collection: 'Website',
-      id: String(website.id),
+
+      id: website.id,
       data: body, // directly use Website-like structure
       overrideAccess: true,
     })
