@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import styles from './TaskList.module.css'
 import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
@@ -41,7 +41,9 @@ export default function TaskListPage() {
   const [sortOrder, setSortOrder] = useState<'Newest' | 'Oldest'>('Newest')
   const [isViewOpen, setIsViewOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  
+
+  // Track whether we already did the initial load, to avoid flicker on polls
+  const didInitialLoadRef = useRef(false)
 
   const toUiTask = (task: any): Task => {
     const id = task?.id ?? task?._rawIds?.commentArrayItemId ?? null
@@ -58,11 +60,35 @@ export default function TaskListPage() {
     } as Task
   }
 
-  const fetchTasks = async () => {
+  // Cheap equality check so we only set state when data actually changed
+  const sameTaskLists = (a: Task[], b: Task[]) => {
+    if (a.length !== b.length) return false
+    for (let i = 0; i < a.length; i++) {
+      const x = a[i], y = b[i]
+      // Compare stable keys + fields that affect UI/sorting
+      if (
+        x.rowKey !== y.rowKey ||
+        x.name !== y.name ||
+        x.status !== y.status ||
+        x.date !== y.date ||
+        x.pathKey !== y.pathKey
+      ) return false
+    }
+    return true
+  }
+
+  const fetchTasks = async (opts?: { silent?: boolean }) => {
     if (!websiteId) return
-    try {
+    const silent = !!opts?.silent
+
+    // Only show the big "Loading..." on the first load or when websiteId changes
+    if (!silent && !didInitialLoadRef.current) {
       setLoading(true)
+    }
+
+    try {
       const res = await fetch(`/api/tasks?websiteId=${websiteId}`, { cache: 'no-store' })
+      if (!res.ok) throw new Error(await res.text())
       const data = await res.json()
       const list: Task[] = (data?.tasks || []).map(toUiTask)
 
@@ -72,22 +98,36 @@ export default function TaskListPage() {
         if (seen.has(t.rowKey)) console.warn('Duplicate rowKey:', t.rowKey, t)
         seen.add(t.rowKey)
       }
-      setTasks(list)
+
+      // Only update state if data changed to avoid unnecessary re-renders/jitter
+      setTasks((prev) => {
+        // Keep the same order as the API for comparison (render sorting happens later)
+        if (sameTaskLists(prev, list)) return prev
+        return list
+      })
     } catch (error) {
       console.error('Error fetching tasks:', error)
     } finally {
-      setLoading(false)
+      if (!silent && !didInitialLoadRef.current) {
+        setLoading(false)
+        didInitialLoadRef.current = true
+      }
     }
   }
 
   useEffect(() => {
-    fetchTasks()
+    // Reset initial-load flag whenever websiteId changes
+    didInitialLoadRef.current = false
+    fetchTasks({ silent: false })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [websiteId])
 
   useEffect(() => {
     if (!websiteId) return
-    const timer = setInterval(fetchTasks, 10000)
+    const timer = setInterval(() => {
+      // Poll silently: no loading state flip, no flicker
+      fetchTasks({ silent: true })
+    }, 10000)
     return () => clearInterval(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [websiteId])
@@ -134,7 +174,8 @@ export default function TaskListPage() {
         }),
       })
       if (!res.ok) throw new Error(await res.text())
-      fetchTasks() // sync
+      // Sync silently to avoid flicker
+      fetchTasks({ silent: true })
     } catch (e) {
       console.error('Failed to update status:', e)
       setTasks(prev) // revert
