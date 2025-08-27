@@ -1,4 +1,5 @@
 import Navbar from '@/app/(frontend)/components/Home/Navbar/Navbar'
+import ChatWidget from '@/app/(frontend)/components/Home/Navbar/ChatWidget'
 import DashBoard from '@/app/(frontend)/components/Home/DashBoard/DashBoard'
 import { getServerUser } from '@/lib/getServerUser'
 
@@ -60,6 +61,7 @@ export default async function HomePage() {
     <>
       <Navbar user={user} />
       <DashBoard data={dashboardData} userData={user} />
+      <ChatWidget userName={user?.username} />
     </>
   )
 }
