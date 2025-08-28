@@ -159,29 +159,45 @@ export default function TaskListPage() {
   const closeView = () => { setSelectedTask(null); setIsViewOpen(false) }
 
   // Optimistic update strictly by rowKey (unique)
-  const updateTaskStatus = async (task: Task, newStatus: UiStatus) => {
-    const prev = tasks
-    setTasks((curr) => curr.map((t) => (t.rowKey === task.rowKey ? { ...t, status: newStatus } : t)))
+  // ✅ REPLACE your existing function with this one
+const updateTaskStatus = async (task: Task, newStatus: UiStatus) => {
+  const prev = tasks
+  setTasks((curr) => curr.map((t) => (t.rowKey === task.rowKey ? { ...t, status: newStatus } : t)))
 
-    try {
-      const res = await fetch('/api/tasks', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          websiteId: task.websiteId,
-          pathKey: task.pathKey,   // <<< absolute path guarantees single update
-          status: newStatus,
-        }),
-      })
-      if (!res.ok) throw new Error(await res.text())
-      // Sync silently to avoid flicker
-      fetchTasks({ silent: true })
-    } catch (e) {
-      console.error('Failed to update status:', e)
-      setTasks(prev) // revert
-      alert('Failed to update status. Please try again.')
+  try {
+    const res = await fetch('/api/tasks', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        websiteId: task.websiteId,
+        pathKey: task.pathKey,   // <<< absolute path guarantees single update
+        status: newStatus,
+      }),
+    })
+
+    if (!res.ok) throw new Error(await res.text())
+
+    // ✅ ADD THIS: broadcast to the comments panel which comment changed
+    const detail = {
+      versionId: task._rawIds?.versionId || null,
+      pageLinkId: task._rawIds?.pageLinkId || null,
+      threadId: task._rawIds?.threadId || null,
+      commentId: task._rawIds?.commentArrayItemId || task.id || null,
+      newStatus: (newStatus === 'Completed' ? 'completed' : 'active') as 'completed' | 'active',
     }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('task:status-updated', { detail }))
+    }
+
+    // keep your silent refresh (optional)
+    fetchTasks({ silent: true })
+  } catch (e) {
+    console.error('Failed to update status:', e)
+    setTasks(prev) // revert
+    alert('Failed to update status. Please try again.')
   }
+}
+
 
   return (
     <div className={styles.pageWrapper}>

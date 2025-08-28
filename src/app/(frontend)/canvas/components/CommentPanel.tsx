@@ -1,6 +1,20 @@
 'use client'
 import { useSession } from 'next-auth/react'
 import { useEffect, useRef, useState } from 'react'
+// ADD
+function TaskStatusBadge({ status }: { status?: 'active' | 'completed' | null }) {
+  if (!status) return null
+  const label = status === 'completed' ? 'Completed' : 'Active'
+  const color =
+    status === 'completed'
+      ? 'bg-green-100 text-green-700 border-green-200'
+      : 'bg-yellow-100 text-yellow-700 border-yellow-200'
+  return (
+    <span className={`inline-block text-[10px] px-1.5 py-0.5 rounded border ${color}`}>
+      {label}
+    </span>
+  )
+}
 
 type Comment = {
   'comment-id'?: string | null
@@ -12,6 +26,9 @@ type Comment = {
   id?: string | null
   edited?: boolean | null // NEW
   editedAt?: string | null // NEW
+  // ADD to your existing Comment type
+  commentType?: 'comment' | 'task' | null
+  commentStatus?: 'active' | 'completed' | null
 }
 
 type Thread = {
@@ -82,6 +99,45 @@ export function CommentsButton({
     window.addEventListener('thread:added', handleThreadAdded)
     return () => window.removeEventListener('thread:added', handleThreadAdded)
   }, [])
+  useEffect(() => {
+  function onTaskStatusUpdated(e: Event) {
+    const { detail } = e as CustomEvent<{
+      versionId: string | null
+      pageLinkId: string | null
+      threadId: string | null
+      commentId: string | null
+      newStatus: 'active' | 'completed'
+    }>
+
+    if (!detail?.commentId) return
+
+    setThreads(prev =>
+      prev.map(t => {
+        // If we know the thread, narrow to it; otherwise scan all threads
+        const tid = t['thread-id'] ?? t.id
+        if (detail.threadId && tid !== detail.threadId) return t
+
+        const comments = (t.comments ?? []).map(c => {
+          const cid = c['comment-id'] ?? c.id
+          if (cid === detail.commentId) {
+            // Only task comments show the badge
+            return {
+              ...c,
+              commentType: c.commentType ?? 'task',
+              commentStatus: detail.newStatus,
+            }
+          }
+          return c
+        })
+        return { ...t, comments }
+      }),
+    )
+  }
+
+  window.addEventListener('task:status-updated', onTaskStatusUpdated)
+  return () => window.removeEventListener('task:status-updated', onTaskStatusUpdated)
+}, [])
+
 
   useEffect(() => {
     const read = () => {
@@ -359,9 +415,16 @@ export function CommentsButton({
                               </div>
 
                               {!isEditing ? (
-                                <p className="mt-1 whitespace-pre-wrap">
-                                  {comment.message ?? 'No message'}
-                                </p>
+                                <div className="mt-1 flex items-start gap-2">
+                                  <p className="whitespace-pre-wrap flex-1">
+                                    {comment.message ?? 'No message'}
+                                  </p>
+
+                                  {/* NEW: read-only badge for tasks */}
+                                  {comment.commentType === 'task' && (
+                                    <TaskStatusBadge status={comment.commentStatus ?? 'active'} />
+                                  )}
+                                </div>
                               ) : (
                                 <form
                                   onSubmit={(e) => {
