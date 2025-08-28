@@ -13,28 +13,34 @@ import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 
+
 export async function generateStaticParams() {
-  const payload = await getPayload({ config: configPromise })
-  const pages = await payload.find({
-    collection: 'pages',
-    draft: false,
-    limit: 1000,
-    overrideAccess: false,
-    pagination: false,
-    select: {
-      slug: true,
-    },
-  })
+  try {
+    // Use your public API so the server that owns the DB handles init/migrations,
+    // and the Next.js build never calls getPayload().
+    const base = process.env.NEXT_PUBLIC_SERVER_URL || "";
+  const res = await fetch(
+  `${base}/api/pages?limit=1000&depth=0&draft=false&select=slug`,
+  { cache: "no-store" } // avoid build-time caching surprises
+);
 
-  const params = pages.docs
-    ?.filter((doc) => {
-      return doc.slug !== 'home'
-    })
-    .map(({ slug }) => {
-      return { slug }
-    })
+    if (!res.ok) {
+      console.warn("generateStaticParams: pages fetch failed:", res.status);
+      return [];
+    }
 
-  return params
+    const data = await res.json();
+    const docs: Array<{ slug?: string }> = data?.docs ?? [];
+
+    return docs
+      .filter((doc) => doc.slug && doc.slug !== "home")
+      .map(({ slug }) => ({ slug: slug! }));
+  } catch (err) {
+    console.warn("generateStaticParams error:", err);
+    // Fail safe: return no params so nothing is prebuilt,
+    // the route will still render at request time.
+    return [];
+  }
 }
 
 type Args = {

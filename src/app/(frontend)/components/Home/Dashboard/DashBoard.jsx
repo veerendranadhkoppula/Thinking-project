@@ -2,6 +2,9 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import styles from "./DashBoard.module.css";
 import Link from "next/link";
+import Pagination from "./Pagination";
+
+const PAGE_SIZE = 5; 
 
 const DashBoard = ({ data, userData }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -9,6 +12,7 @@ const DashBoard = ({ data, userData }) => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterCategory, setFilterCategory] = useState("all");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const filterRef = useRef(null);
 
@@ -18,17 +22,20 @@ const DashBoard = ({ data, userData }) => {
         setFilterOpen(false);
       }
     }
-
     if (filterOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     } else {
       document.removeEventListener("mousedown", handleClickOutside);
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [filterOpen]);
+
+  
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, sortOrder, filterCategory]);
 
   const filteredData = useMemo(() => {
     let filtered = [...data];
@@ -47,6 +54,21 @@ const DashBoard = ({ data, userData }) => {
     );
     return filtered;
   }, [data, searchTerm, sortOrder, filterCategory]);
+
+  // ✅ paginate
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
+  const clampedPage = Math.min(currentPage, totalPages);
+  const start = (clampedPage - 1) * PAGE_SIZE;
+  const end = start + PAGE_SIZE;
+  const pageItems = filteredData.slice(start, end);
+
+  const gotoPage = (p) => {
+    if (p < 1 || p > totalPages) return;
+    setCurrentPage(p);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
 
   return (
     <div className={styles.dashboardContainer}>
@@ -109,8 +131,8 @@ const DashBoard = ({ data, userData }) => {
       </div>
 
       <div className={styles.dashboardResults}>
-        {filteredData.length > 0 ? (
-          filteredData.map((item) => (
+        {pageItems.length > 0 ? (
+          pageItems.map((item) => (
             <div className={styles.dashboardCard} key={item.id}>
               <Link href={item.href} className={styles.dashboardCardWrapper}>
                 <h4>{item.title}</h4>
@@ -127,6 +149,15 @@ const DashBoard = ({ data, userData }) => {
           <p className={styles.noResults}>No results found</p>
         )}
       </div>
+
+      
+      <Pagination
+        totalItems={filteredData.length}
+        pageSize={PAGE_SIZE}
+        currentPage={clampedPage}
+        onPageChange={gotoPage}
+        showAlways={false}
+      />
     </div>
   );
 };

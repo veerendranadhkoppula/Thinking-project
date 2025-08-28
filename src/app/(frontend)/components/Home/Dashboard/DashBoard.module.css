@@ -106,12 +106,16 @@
 }
 
 .dashboardCard {
-  background: white;
-  cursor: pointer;
-  border: 1px solid #eee;
-  border-radius: 10px;
-  padding: 16px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+ background: white;
+    cursor: pointer;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 16px;
+    gap: 20px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .dashboardCard:hover {

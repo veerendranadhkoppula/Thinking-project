@@ -18,6 +18,10 @@
 .chat-toggle:hover {
   background: #0056b3;
 }
+.font-semibold {
+    font-weight: 600;
+    color: white;
+}
 
 /* Chat box */
 .chat-box {

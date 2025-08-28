@@ -61,6 +61,7 @@ export default async function HomePage() {
     <>
       <Navbar user={user} />
       <DashBoard data={dashboardData} userData={user} />
+      
       <ChatWidget userName={user?.username} />
     </>
   )
