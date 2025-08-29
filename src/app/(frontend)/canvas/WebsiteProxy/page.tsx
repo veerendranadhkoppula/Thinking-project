@@ -6,6 +6,12 @@ import { Website } from '@/payload-types'
 import { isLatestVersion } from '../helper/isLatestVersion'
 import ClientWebsiteProxy from './ClientWebsiteProxy'
 
+import { cookies } from 'next/headers'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import GuestEmailGate from './GuestEmailGate'
+import AccessDenied from '@/components/AccessDenied'
+
 export const dynamic = 'force-dynamic'
 
 type SearchParams = {
@@ -43,6 +49,36 @@ export default async function WebsiteProxy({
   }
   if (!websiteData) return notFound()
 
+  // ---- ACCESS GATE ----
+  const jar = await cookies() // <-- await here
+  const guestCookie = jar.get(`guest:${websiteId}`)?.value
+
+  const lowerGuests =
+    websiteData.guests?.map((g) => g.guest?.toLowerCase()).filter(Boolean) ?? []
+  const lowerAdmins =
+    websiteData.admins?.map((a) => a.admin?.toLowerCase()).filter(Boolean) ?? []
+  const lowerEditors =
+    websiteData.editors?.map((e) => e.editor?.toLowerCase()).filter(Boolean) ?? []
+
+  // If logged in and email is allowed (admin/editor/guest), allow
+  const session = (await getServerSession(authOptions)) as { user?: { email?: string | null } } | null
+  const sessionEmail = session?.user?.email?.toLowerCase()
+  const sessionAllowed =
+    !!sessionEmail &&
+    (lowerAdmins.includes(sessionEmail) ||
+      lowerEditors.includes(sessionEmail) ||
+      lowerGuests.includes(sessionEmail))
+
+  if (!sessionAllowed) {
+    // If not logged in (or not allowed), check guest cookie
+    if (guestCookie !== '1') {
+      // No cookie ⇒ show email prompt
+      return <GuestEmailGate websiteId={websiteId!} versionStr={versionStr ?? null} />
+    }
+    // cookie present ⇒ allow
+  }
+  // ---- END ACCESS GATE ----
+
   const versionsArr = websiteData.versions ?? []
   if (!versionsArr[versionIdx]) {
     console.warn('Invalid version index, falling back to latest')
@@ -68,7 +104,6 @@ export default async function WebsiteProxy({
     ((safeVersionIdx + 1) as number).toString(),
   )
 
-  // 👉 Send everything to the client component
   return (
     <ClientWebsiteProxy
       websiteData={websiteData}
