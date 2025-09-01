@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react'
 import styles from './TaskList.module.css'
 import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
+import { useLoading } from '@/app/context/LoadingContext' // ✅ added
 
 type UiStatus = 'Active' | 'Completed'
 
@@ -17,8 +18,8 @@ interface Task {
   pageLinkId?: string | null
   websiteId?: string | null
   date?: string | null
-  rowKey: string          // unique per row (from API)
-  pathKey: string         // absolute array path (from API)
+  rowKey: string
+  pathKey: string
   _rawIds?: {
     versionId?: string | null
     pageLinkId?: string | null
@@ -34,15 +35,21 @@ export default function TaskListPage() {
   const searchParams = useSearchParams()
   const websiteId = searchParams.get('id')
 
+  // ✅ Global loader
+  const { setLoading } = useLoading()
+  useEffect(() => {
+    setLoading(false) // stop global loader when page mounts
+  }, [setLoading])
+
+  // ✅ Local state loader renamed
   const [tasks, setTasks] = useState<Task[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setTasksLoading] = useState(true) // renamed this
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'All' | UiStatus>('All')
   const [sortOrder, setSortOrder] = useState<'Newest' | 'Oldest'>('Newest')
   const [isViewOpen, setIsViewOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
 
-  // Track whether we already did the initial load, to avoid flicker on polls
   const didInitialLoadRef = useRef(false)
 
   const toUiTask = (task: any): Task => {
@@ -60,19 +67,18 @@ export default function TaskListPage() {
     } as Task
   }
 
-  // Cheap equality check so we only set state when data actually changed
   const sameTaskLists = (a: Task[], b: Task[]) => {
     if (a.length !== b.length) return false
     for (let i = 0; i < a.length; i++) {
       const x = a[i], y = b[i]
-      // Compare stable keys + fields that affect UI/sorting
       if (
         x.rowKey !== y.rowKey ||
         x.name !== y.name ||
         x.status !== y.status ||
         x.date !== y.date ||
         x.pathKey !== y.pathKey
-      ) return false
+      )
+        return false
     }
     return true
   }
@@ -81,9 +87,8 @@ export default function TaskListPage() {
     if (!websiteId) return
     const silent = !!opts?.silent
 
-    // Only show the big "Loading..." on the first load or when websiteId changes
     if (!silent && !didInitialLoadRef.current) {
-      setLoading(true)
+      setTasksLoading(true) // ✅ use local loader
     }
 
     try {
@@ -92,16 +97,13 @@ export default function TaskListPage() {
       const data = await res.json()
       const list: Task[] = (data?.tasks || []).map(toUiTask)
 
-      // Guard: log duplicates if any
       const seen = new Set<string>()
       for (const t of list) {
         if (seen.has(t.rowKey)) console.warn('Duplicate rowKey:', t.rowKey, t)
         seen.add(t.rowKey)
       }
 
-      // Only update state if data changed to avoid unnecessary re-renders/jitter
       setTasks((prev) => {
-        // Keep the same order as the API for comparison (render sorting happens later)
         if (sameTaskLists(prev, list)) return prev
         return list
       })
@@ -109,14 +111,13 @@ export default function TaskListPage() {
       console.error('Error fetching tasks:', error)
     } finally {
       if (!silent && !didInitialLoadRef.current) {
-        setLoading(false)
+        setTasksLoading(false) // ✅ use local loader
         didInitialLoadRef.current = true
       }
     }
   }
 
   useEffect(() => {
-    // Reset initial-load flag whenever websiteId changes
     didInitialLoadRef.current = false
     fetchTasks({ silent: false })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -125,14 +126,12 @@ export default function TaskListPage() {
   useEffect(() => {
     if (!websiteId) return
     const timer = setInterval(() => {
-      // Poll silently: no loading state flip, no flicker
       fetchTasks({ silent: true })
     }, 10000)
     return () => clearInterval(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [websiteId])
 
-  // Show ALL tasks now
   const totalTasks = tasks.length
   const completedTasks = tasks.filter((t) => t.status === 'Completed').length
   const progressPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
@@ -155,49 +154,54 @@ export default function TaskListPage() {
     return bySort
   }, [tasks, search, statusFilter, sortOrder])
 
-  const openView = (task: Task) => { setSelectedTask(task); setIsViewOpen(true) }
-  const closeView = () => { setSelectedTask(null); setIsViewOpen(false) }
-
-  // Optimistic update strictly by rowKey (unique)
-  // ✅ REPLACE your existing function with this one
-const updateTaskStatus = async (task: Task, newStatus: UiStatus) => {
-  const prev = tasks
-  setTasks((curr) => curr.map((t) => (t.rowKey === task.rowKey ? { ...t, status: newStatus } : t)))
-
-  try {
-    const res = await fetch('/api/tasks', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        websiteId: task.websiteId,
-        pathKey: task.pathKey,   // <<< absolute path guarantees single update
-        status: newStatus,
-      }),
-    })
-
-    if (!res.ok) throw new Error(await res.text())
-
-    // ✅ ADD THIS: broadcast to the comments panel which comment changed
-    const detail = {
-      versionId: task._rawIds?.versionId || null,
-      pageLinkId: task._rawIds?.pageLinkId || null,
-      threadId: task._rawIds?.threadId || null,
-      commentId: task._rawIds?.commentArrayItemId || task.id || null,
-      newStatus: (newStatus === 'Completed' ? 'completed' : 'active') as 'completed' | 'active',
-    }
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('task:status-updated', { detail }))
-    }
-
-    // keep your silent refresh (optional)
-    fetchTasks({ silent: true })
-  } catch (e) {
-    console.error('Failed to update status:', e)
-    setTasks(prev) // revert
-    alert('Failed to update status. Please try again.')
+  const openView = (task: Task) => {
+    setSelectedTask(task)
+    setIsViewOpen(true)
   }
-}
+  const closeView = () => {
+    setSelectedTask(null)
+    setIsViewOpen(false)
+  }
 
+  const updateTaskStatus = async (task: Task, newStatus: UiStatus) => {
+    const prev = tasks
+    setTasks((curr) =>
+      curr.map((t) => (t.rowKey === task.rowKey ? { ...t, status: newStatus } : t)),
+    )
+
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          websiteId: task.websiteId,
+          pathKey: task.pathKey,
+          status: newStatus,
+        }),
+      })
+
+      if (!res.ok) throw new Error(await res.text())
+
+      const detail = {
+        versionId: task._rawIds?.versionId || null,
+        pageLinkId: task._rawIds?.pageLinkId || null,
+        threadId: task._rawIds?.threadId || null,
+        commentId: task._rawIds?.commentArrayItemId || task.id || null,
+        newStatus: (newStatus === 'Completed' ? 'completed' : 'active') as
+          | 'completed'
+          | 'active',
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('task:status-updated', { detail }))
+      }
+
+      fetchTasks({ silent: true })
+    } catch (e) {
+      console.error('Failed to update status:', e)
+      setTasks(prev) // revert
+      alert('Failed to update status. Please try again.')
+    }
+  }
 
   return (
     <div className={styles.pageWrapper}>
@@ -238,7 +242,7 @@ const updateTaskStatus = async (task: Task, newStatus: UiStatus) => {
           </div>
 
           <div className={styles.tableWrapper}>
-            {loading ? (
+            {loading ? ( // ✅ local loading state
               <p style={{ textAlign: 'center' }}>Loading tasks...</p>
             ) : (
               <table className={styles.table}>
@@ -252,7 +256,9 @@ const updateTaskStatus = async (task: Task, newStatus: UiStatus) => {
                   {filteredTasks.length > 0 ? (
                     filteredTasks.map((task) => (
                       <tr key={task.rowKey} className={styles.rowClickable}>
-                        <td data-label="Task" onClick={() => openView(task)}>{task.name}</td>
+                        <td data-label="Task" onClick={() => openView(task)}>
+                          {task.name}
+                        </td>
                         <td data-label="Status">
                           <select
                             className={styles.statusDropdown}
@@ -260,7 +266,9 @@ const updateTaskStatus = async (task: Task, newStatus: UiStatus) => {
                             onChange={(e) => updateTaskStatus(task, e.target.value as UiStatus)}
                           >
                             {STATUS_OPTIONS.map((opt) => (
-                              <option key={opt} value={opt}>{opt}</option>
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
                             ))}
                           </select>
                         </td>
@@ -295,7 +303,9 @@ const updateTaskStatus = async (task: Task, newStatus: UiStatus) => {
               </div>
             </div>
             <div className={styles.modalActions}>
-              <button type="button" className={styles.cancelBtn} onClick={closeView}>Close</button>
+              <button type="button" className={styles.cancelBtn} onClick={closeView}>
+                Close
+              </button>
             </div>
           </div>
         </div>

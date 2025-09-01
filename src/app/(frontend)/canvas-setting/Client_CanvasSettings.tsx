@@ -1,6 +1,6 @@
 // src/app/canvas-setting/Client_CanvasSettings.tsx
 'use client'
-
+import { useLoading } from '@/app/context/LoadingContext' // ✅ added
 import React, { useEffect, useMemo, useState, useTransition } from 'react'
 import styles from './CanvasSettings.module.css'
 import { useSession } from 'next-auth/react'
@@ -37,7 +37,10 @@ interface Props {
 export default function Client_CanvasSettings({ data }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<'editor' | 'guest' | 'viewport' | 'versions'>('editor')
-
+ const { setLoading } = useLoading() // ✅ added
+  useEffect(() => {
+    setLoading(false) // ✅ hide loader on mount
+  }, [setLoading])
   // Editors
   const [editors, setEditors] = useState<EditorRow[]>([])
   const [email, setEmail] = useState('')

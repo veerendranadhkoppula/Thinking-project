@@ -1,4 +1,3 @@
-// src/app/canvas-setting/page.tsx
 import configPromise from '@/payload.config'
 import payload, { CollectionSlug } from 'payload'
 import Client_CanvasSettings from './Client_CanvasSettings'
@@ -15,6 +14,7 @@ type ViewportRow = { label: string; x: number; y: number }
 function has<T extends string>(k: T) {
   return (x: unknown): x is Record<T, unknown> => !!x && typeof x === 'object' && k in (x as any)
 }
+
 const hasAdmins = has('admins')
 const hasEditors = has('editors')
 const hasGuests = has('guests')

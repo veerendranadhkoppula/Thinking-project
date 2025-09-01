@@ -2,6 +2,8 @@ import Navbar from '@/app/(frontend)/components/Home/Navbar/Navbar'
 import ChatWidget from '@/app/(frontend)/components/Home/Navbar/ChatWidget'
 import DashBoard from '@/app/(frontend)/components/Home/DashBoard/DashBoard'
 import { getServerUser } from '@/lib/getServerUser'
+import ClientHomeMounted from './components/Home/ClientHomeMounted'
+
 
 const payloadURL = process.env.NEXT_PUBLIC_PAYLOAD_API as string
 export const dynamic = 'force-dynamic'
@@ -59,9 +61,9 @@ export default async function HomePage() {
 
   return (
     <>
+      <ClientHomeMounted /> 
       <Navbar user={user} />
       <DashBoard data={dashboardData} userData={user} />
-      
       <ChatWidget userName={user?.username} />
     </>
   )

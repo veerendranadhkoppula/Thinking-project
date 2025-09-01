@@ -18,7 +18,8 @@ export default function Navbar({ user }: { user: User | null }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // 3) Form state, initialized with whatever is available now
+  const [creating, setCreating] = useState(false) // ✅ new state
+
   const [formData, setFormData] = useState({
     email: user?.email || '',
     title: '',
@@ -28,7 +29,6 @@ export default function Navbar({ user }: { user: User | null }) {
     file: null as File | File[] | null,
   })
 
-  // 4) Keep email in sync if session arrives later
   useEffect(() => {
     setFormData((prev) => ({ ...prev, email: user?.email || '' }))
   }, [user?.email])
@@ -48,6 +48,7 @@ export default function Navbar({ user }: { user: User | null }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      setCreating(true) // ✅ show "Creating..."
       const res = await fetch('/api/canvas/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -61,20 +62,26 @@ export default function Navbar({ user }: { user: User | null }) {
       })
       const data = await res.json()
       if (!res.ok || !data.ok) {
+        setCreating(false)
         alert(`Create failed: ${data?.error || 'Unknown error'}`)
         return
       }
-      setIsModalOpen(false)
-      if (formData.type == 'Website') {
-        formData.type = 'Website' + formData.websiteType
-      }
-      router.push(`/canvas/?id=${data.id}&version=1&type=${formData.type}`)
+      setIsModalOpen(false) // ✅ close modal after success
+      setCreating(false) // ✅ reset state
+      setFormData({
+        email: user?.email || '',
+        title: '',
+        type: '',
+        websiteType: '',
+        extraField: '',
+        file: null,
+      }) // ✅ reset form
     } catch (err) {
+      setCreating(false)
       alert('Something went wrong while creating canvas')
     }
   }
 
-  // Use NextAuth signOut (safer than custom endpoint)
   const handleLogout = async () => {
     setIsDropdownOpen(false)
     setIsModalOpen(false)
@@ -247,8 +254,10 @@ export default function Navbar({ user }: { user: User | null }) {
               )}
 
               <div className={styles.modalActions}>
-                <button type="submit">Create</button>
-                <button type="button" onClick={() => setIsModalOpen(false)}>
+                <button type="submit" disabled={creating}>
+                  {creating ? 'Creating…' : 'Create'}
+                </button>
+                <button type="button" onClick={() => setIsModalOpen(false)} disabled={creating}>
                   Cancel
                 </button>
               </div>

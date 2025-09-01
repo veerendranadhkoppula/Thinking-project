@@ -3,8 +3,9 @@ import React, { useState, useMemo, useRef, useEffect } from "react";
 import styles from "./DashBoard.module.css";
 import Link from "next/link";
 import Pagination from "./Pagination";
+import { useLoading } from "@/app/context/LoadingContext"; 
 
-const PAGE_SIZE = 5; 
+const PAGE_SIZE = 5;
 
 const DashBoard = ({ data, userData }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -13,6 +14,8 @@ const DashBoard = ({ data, userData }) => {
   const [filterCategory, setFilterCategory] = useState("all");
   const [searchOpen, setSearchOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const { setLoading } = useLoading(); 
 
   const filterRef = useRef(null);
 
@@ -32,7 +35,6 @@ const DashBoard = ({ data, userData }) => {
     };
   }, [filterOpen]);
 
-  
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, sortOrder, filterCategory]);
@@ -134,12 +136,19 @@ const DashBoard = ({ data, userData }) => {
         {pageItems.length > 0 ? (
           pageItems.map((item) => (
             <div className={styles.dashboardCard} key={item.id}>
-              <Link href={item.href} className={styles.dashboardCardWrapper}>
+              <Link
+                href={item.href}
+                className={styles.dashboardCardWrapper}
+                onClick={() => setLoading(true)}
+              >
                 <h4>{item.title}</h4>
                 <p>{item.category}</p>
               </Link>
               {item.isAdmin && (
-                <Link href={item.settingsHref}>
+                <Link
+                  href={item.settingsHref}
+                  onClick={() => setLoading(true)}
+                >
                   <h4>Settings</h4>
                 </Link>
               )}
@@ -150,7 +159,6 @@ const DashBoard = ({ data, userData }) => {
         )}
       </div>
 
-      
       <Pagination
         totalItems={filteredData.length}
         pageSize={PAGE_SIZE}

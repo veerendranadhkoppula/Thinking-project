@@ -1,23 +1,23 @@
-'use client'
-
-import IframePreview from '../components/IframePane'
-import { ResponsiveButton } from '../components/ResponsiveButton'
-import { CommentsButton } from '../components/CommentPanel'
-import { VersionButton } from '../components/VersionButton'
-import { ModeSwitch } from '../components/ModeSwitch'
-import Link from 'next/link'
-import { Website } from '@/payload-types'
-import { useState } from 'react'
+"use client";
+import IframePreview from "../components/IframePane";
+import { ResponsiveButton } from "../components/ResponsiveButton";
+import { CommentsButton } from "../components/CommentPanel";
+import { VersionButton } from "../components/VersionButton";
+import { ModeSwitch } from "../components/ModeSwitch";
+import Link from "next/link";
+import { Website } from "@/payload-types";
+import { useState, useEffect } from "react";
+import { useLoading } from "@/app/context/LoadingContext"; 
 
 type Props = {
-  websiteData: Website
-  versionsArr: any[]
-  safeVersionIdx: number
-  threads: any[]
-  firstPageLink: string
-  websiteId: string
-  latest: boolean
-}
+  websiteData: Website;
+  versionsArr: any[];
+  safeVersionIdx: number;
+  threads: any[];
+  firstPageLink: string;
+  websiteId: string;
+  latest: boolean;
+};
 
 export default function ClientWebsiteProxy({
   websiteData,
@@ -28,15 +28,20 @@ export default function ClientWebsiteProxy({
   websiteId,
   latest,
 }: Props) {
-  const [mode, setMode] = useState<'viewer' | 'commentor'>('viewer')
+  const [mode, setMode] = useState<"viewer" | "commentor">("viewer");
+  const { setLoading } = useLoading();
+
+  useEffect(() => {
+    setLoading(false);
+  }, [setLoading]);
 
   return (
     <div className="h-screen flex flex-col">
       <div className="flex-1 overflow-hidden">
         <IframePreview
           pageData={websiteData}
-          url={websiteData.url ?? ''}
-          injectionType={websiteData.type?.injectionType ?? 'Proxy'}
+          url={websiteData.url ?? ""}
+          injectionType={websiteData.type?.injectionType ?? "Proxy"}
           latest={latest}
           mode={mode}
         />
@@ -48,7 +53,7 @@ export default function ClientWebsiteProxy({
             <ResponsiveButton
               customViewport={
                 websiteData.viewports?.map((v) => ({
-                  label: v.label ?? '',
+                  label: v.label ?? "",
                   x: v.x ?? 0,
                   y: v.y ?? 0,
                   orientation: v.orientation ?? false,
@@ -74,12 +79,14 @@ export default function ClientWebsiteProxy({
             <Link
               href={`/task-list?id=${websiteId}`}
               className="px-3 py-2 text-sm rounded-xl border shadow-sm bg-white hover:bg-gray-50"
+              onClick={() => setLoading(true)} 
             >
               Tasks
             </Link>
             <Link
               href="/"
               className="px-3 py-2 text-sm rounded-xl border shadow-sm bg-white hover:bg-gray-50"
+              onClick={() => setLoading(true)} 
             >
               Home
             </Link>
@@ -87,5 +94,5 @@ export default function ClientWebsiteProxy({
         </div>
       </div>
     </div>
-  )
+  );
 }

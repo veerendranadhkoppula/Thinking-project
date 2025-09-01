@@ -4,7 +4,7 @@ import { cn } from '@/utilities/ui'
 import { GeistMono } from 'geist/font/mono'
 import { GeistSans } from 'geist/font/sans'
 import React from 'react'
-
+import { LoadingProvider } from "@/app/context/LoadingContext";
 // import { AdminBar } from '@/components/AdminBar'
 // import { Footer } from '@/Footer/Component'
 // import { Header } from '@/Header/Component'
@@ -28,6 +28,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <Providers>
+          <LoadingProvider> 
           {/* <AdminBar
             adminBarProps={{
               preview: isEnabled,
@@ -36,6 +37,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {/* <Header /> */}
           {children}
           {/* <Footer /> */}
+            </LoadingProvider>
         </Providers>
       </body>
     </html>
