@@ -66,9 +66,15 @@ export default function IframePreview({
     }
   }, [mode])
 
+  // 👉 UseMemo so iframe URL only changes when url/latest change
+const iframeUrl = useMemo(() => {
+  return `/api/proxy/website/?url=${encodeURIComponent(url)}&latest=${latest ? '1' : '0'}`
+}, [url, latest])
+
+  // 👉 Attach load listener once per pageData/current, and clean it up
   useEffect(() => {
-    if (!iframeRef.current) return
     const iframe = iframeRef.current
+    if (!iframe) return
 
     const existingThreads =
       pageData?.versions?.flatMap(
@@ -84,8 +90,9 @@ export default function IframePreview({
             })),
           ) || [],
       ) || []
+      
 
-    iframe.addEventListener('load', () => {
+    const handleLoad = () => {
       iframe.contentWindow?.postMessage(
         {
           type: 'website-proxy-control',
@@ -95,10 +102,13 @@ export default function IframePreview({
         },
         '*',
       )
-    })
-  }, [pageData])
-  // Use a stable URL (no `mode` param, so it won’t reload on change)
-  const iframeUrl = `/api/proxy/website/?url=${encodeURIComponent(url)}&latest=${latest ? '1' : '0'}`
+    }
+
+    iframe.addEventListener('load', handleLoad)
+    return () => {
+      iframe.removeEventListener('load', handleLoad)
+    }
+  }, [pageData, current])
 
   // Listen for injected script messages
   useEffect(() => {
@@ -121,6 +131,21 @@ export default function IframePreview({
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
   }, [latest])
+useEffect(() => {
+  function handleProxyNav(event: MessageEvent) {
+    if (event.data?.type === 'website-proxy-nav' && event.data.url) {
+      if (iframeRef.current) {
+        // ✅ Prevent reload loops
+        if (iframeRef.current.src !== event.data.url) {
+          iframeRef.current.src = event.data.url
+        }
+      }
+    }
+  }
+  window.addEventListener('message', handleProxyNav)
+  return () => window.removeEventListener('message', handleProxyNav)
+}, [])
+
 
   // Get viewport size from localStorage
   useEffect(() => {
@@ -235,7 +260,7 @@ export default function IframePreview({
     }
 
     const newThread = {
-      'thread-id': newAnnotation.id, // e.g. "box-1755930952666-3"
+      'thread-id': newAnnotation.id,
       viewport: current?.label || '',
       'viewport-Orientation': current?.orientation || false,
       comments: [newComment],
